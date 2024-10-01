@@ -3,11 +3,11 @@ __import__('pysqlite3')
 import sys
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
-from langchain_chroma import Chroma
 from langchain_community.document_loaders import PyPDFDirectoryLoader
 from langchain_community.embeddings.sentence_transformer import (
     SentenceTransformerEmbeddings,
 )
+from langchain_community.vectorstores import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 class RAG:
@@ -15,16 +15,14 @@ class RAG:
         self.loader = PyPDFDirectoryLoader(input_path)
         self.data = self.loader.load()
         self.text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
-            chunk_size=1000,
-            chunk_overlap=200,
-            encoding_name='cl100k_base'
+            chunk_size=1000, chunk_overlap=200
         )
         self.docs = self.text_splitter.split_documents(self.data)
         self.embeddings = SentenceTransformerEmbeddings()
         self.vector_store = Chroma.from_documents(
-            self.docs, 
-            self.embeddings,
-            collection_name = 'renault',
+            documents=self.docs,
+            collection_name="rag-chroma",
+            embedding=self.embeddings,
             persist_directory = './db/chromadb',
         )
 
