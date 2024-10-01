@@ -2,16 +2,19 @@ from langchain.schema import Document
 from langchain_community.document_loaders import PyPDFDirectoryLoader
 from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
 from langchain_community.vectorstores import Chroma
-from langchain_community.chat_models import ChatOllama
+from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
 from langchain_community.tools.tavily_search import TavilySearchResults
-from llamaapi import LlamaAPI
 
 
 class RAG:
-    def __init__(self, input_path, hf_api_key) -> None:
+    def __init__(
+            self, 
+            input_path, 
+            HF_API_KEY
+        ) -> None:
         self.loader = PyPDFDirectoryLoader(input_path)
         self.data = self.loader.load()
         self.text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
@@ -19,7 +22,15 @@ class RAG:
         )
         self.docs = self.text_splitter.split_documents(self.data)
         embeddings = HuggingFaceInferenceAPIEmbeddings(
-            api_key=hf_api_key, model_name="sentence-transformers/all-MiniLM-l6-v2"
+            api_key=HF_API_KEY, 
+            #model_name="jinaai/jina-embeddings-v3"
+        )
+        llm = HuggingFaceEndpoint(
+            #repo_id="meta-llama/Llama-3.2-3B-Instruct",
+            repo_id="mistralai/Mistral-7B-Instruct-v0.2",
+            task="text-generation",
+            temperature=0.5,
+            huggingfacehub_api_token=HF_API_KEY,
         )
         self.vector_store = Chroma.from_documents(
             documents=self.docs,
@@ -27,7 +38,7 @@ class RAG:
             embedding=embeddings,
             persist_directory = './db/chromadb',
         )
-        self.retriever = self.vector_store.as_retriever(k=4)
+        self.retriever = self.vector_store.as_retriever(k=2)
         retrieval_grader_prompt = PromptTemplate(
             template="""You are a teacher grading a quiz. You will be given: 
             1/ a QUESTION
@@ -50,9 +61,8 @@ class RAG:
             """,
             input_variables=["question", "documents"],
         )
-        retrieval_grader_llm = ChatOllama(model="llama3.2", format="json", temperature=0)
-        self.retrieval_grader = retrieval_grader_prompt | retrieval_grader_llm | JsonOutputParser()
-        self.web_search_tool = TavilySearchResults(k=3)
+        self.retrieval_grader = retrieval_grader_prompt | llm | JsonOutputParser()
+        self.web_search_tool = TavilySearchResults(k=2)
 
         generator_prompt = PromptTemplate(
             template="""You are an assistant for question-answering tasks. 
@@ -68,8 +78,7 @@ class RAG:
             """,
             input_variables=["question", "documents"],
         )
-        generator_llm = ChatOllama(model="llama3.2", temperature=0)
-        self.rag_chain = generator_prompt | generator_llm | StrOutputParser()
+        self.rag_chain = generator_prompt | llm | StrOutputParser()
 
 
     def retrieve(self, state):

@@ -1,13 +1,9 @@
 import os
 from dotenv import load_dotenv
 
-from typing import Annotated
-
 from typing_extensions import TypedDict
 
 from langgraph.graph import StateGraph, START, END
-from langgraph.graph.message import add_messages
-from langchain_community.chat_models import ChatOllama
 
 
 from typing import List
@@ -20,6 +16,7 @@ import uuid
 load_dotenv()
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 HF_API_KEY = os.getenv("HF_API_KEY")
+os.environ['CURL_CA_BUNDLE'] = ''
 
 
 class GraphState(TypedDict):
@@ -42,7 +39,7 @@ class GraphState(TypedDict):
 
 def langgragh():
     workflow = StateGraph(GraphState)
-    rag = RAG(input_path="./data", hf_api_key=HF_API_KEY)
+    rag = RAG(input_path="./data", HF_API_KEY=HF_API_KEY)
 
     # Define the nodes
     workflow.add_node("retrieve", rag.retrieve)  # retrieve
@@ -65,15 +62,12 @@ def langgragh():
     workflow.add_edge("generate", END)
 
     custom_graph = workflow.compile()
-    return custom_graph
 
-
-def main():
-    custom_graph = langgragh()
     def predict_custom_agent_local_answer(example: dict):
         config = {"configurable": {"thread_id": str(uuid.uuid4())}}
         state_dict = custom_graph.invoke(
-            {"question": example["input"], "steps": []}, config
+            {"question": example["input"], "steps": []},
+            config
         )
         return {"response": state_dict["generation"], "steps": state_dict["steps"]}
 
@@ -85,4 +79,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    langgragh()
