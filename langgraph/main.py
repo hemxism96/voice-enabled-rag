@@ -19,6 +19,7 @@ import uuid
 
 load_dotenv()
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
+HF_API_KEY = os.getenv("HF_API_KEY")
 
 
 class GraphState(TypedDict):
@@ -41,7 +42,7 @@ class GraphState(TypedDict):
 
 def langgragh():
     workflow = StateGraph(GraphState)
-    rag = RAG(input_path="./data")
+    rag = RAG(input_path="./data", hf_api_key=HF_API_KEY)
 
     # Define the nodes
     workflow.add_node("retrieve", rag.retrieve)  # retrieve

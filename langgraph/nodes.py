@@ -1,23 +1,26 @@
 from langchain.schema import Document
 from langchain_community.document_loaders import PyPDFDirectoryLoader
-from langchain_ollama import OllamaEmbeddings
+from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_community.chat_models import ChatOllama
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
 from langchain_community.tools.tavily_search import TavilySearchResults
+from llamaapi import LlamaAPI
 
 
 class RAG:
-    def __init__(self, input_path) -> None:
+    def __init__(self, input_path, hf_api_key) -> None:
         self.loader = PyPDFDirectoryLoader(input_path)
         self.data = self.loader.load()
         self.text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
             chunk_size=1000, chunk_overlap=200
         )
         self.docs = self.text_splitter.split_documents(self.data)
-        embeddings = OllamaEmbeddings(model="llama3.2")
+        embeddings = HuggingFaceInferenceAPIEmbeddings(
+            api_key=hf_api_key, model_name="sentence-transformers/all-MiniLM-l6-v2"
+        )
         self.vector_store = Chroma.from_documents(
             documents=self.docs,
             collection_name="rag-chroma",
