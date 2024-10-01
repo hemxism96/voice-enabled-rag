@@ -11,10 +11,10 @@ class SpeechToTextConverter:
 
     def listen(self):
         with sr.Microphone() as source:
-            print("Say something!")
+            print("Ask something!")
             audio = self.recognizer.listen(source)
         return audio
-    
+
     def convert(self, audio):
         try:
             text = self.recognizer.recognize_whisper(

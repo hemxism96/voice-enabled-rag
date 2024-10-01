@@ -1,23 +1,42 @@
 from langchain.schema import Document
+from langchain_community.document_loaders import PyPDFDirectoryLoader
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_chroma import Chroma
-from langchain_ollama.llms import OllamaLLM
+from langchain_community.vectorstores import Chroma
+from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
 from langchain_community.tools.tavily_search import TavilySearchResults
-import chromadb
+
 
 class RAG:
     def __init__(
-            self
+            self, 
+            input_path, 
+            HF_API_KEY
         ) -> None:
-        embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-l6-v2")
-        llm = OllamaLLM(model="llama3.2")
-        persistent_client = chromadb.PersistentClient(path="./db/chromadb")
-        self.vector_store = Chroma(
-            client=persistent_client,
-            embedding_function=embeddings,
-            collection_name = "rag-chroma"
+        self.loader = PyPDFDirectoryLoader(input_path)
+        self.data = self.loader.load()
+        self.text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
+            chunk_size=1000, chunk_overlap=200
+        )
+        self.docs = self.text_splitter.split_documents(self.data)
+        embeddings = HuggingFaceInferenceAPIEmbeddings(
+            api_key=HF_API_KEY, 
+            #model_name="jinaai/jina-embeddings-v3"
+        )
+        llm = HuggingFaceEndpoint(
+            #repo_id="meta-llama/Llama-3.2-3B-Instruct",
+            repo_id="mistralai/Mistral-7B-Instruct-v0.2",
+            task="text-generation",
+            temperature=0.5,
+            huggingfacehub_api_token=HF_API_KEY,
+        )
+        self.vector_store = Chroma.from_documents(
+            documents=self.docs,
+            collection_name="rag-chroma",
+            embedding=embeddings,
+            persist_directory = './db/chromadb',
         )
         self.retriever = self.vector_store.as_retriever(k=2)
         retrieval_grader_prompt = PromptTemplate(

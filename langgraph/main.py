@@ -39,7 +39,7 @@ class GraphState(TypedDict):
 
 def langgragh():
     workflow = StateGraph(GraphState)
-    rag = RAG(input_path="./data", HF_API_KEY=HF_API_KEY)
+    rag = RAG()
 
     # Define the nodes
     workflow.add_node("retrieve", rag.retrieve)  # retrieve
@@ -63,18 +63,11 @@ def langgragh():
 
     custom_graph = workflow.compile()
 
-    def predict_custom_agent_local_answer(example: dict):
-        config = {"configurable": {"thread_id": str(uuid.uuid4())}}
-        state_dict = custom_graph.invoke(
-            {"question": example["input"], "steps": []},
-            config
-        )
-        return {"response": state_dict["generation"], "steps": state_dict["steps"]}
-
-
     example = {"input": "List the members of the board directors in 2022."}
-    response = predict_custom_agent_local_answer(example)
-    print(response)
+    response = custom_graph.invoke(
+        {"question": example["input"], "steps": []}
+    )
+    print(response["generation"])
 
 
 
