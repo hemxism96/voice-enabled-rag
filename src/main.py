@@ -20,6 +20,31 @@ from langgraph.graph import StateGraph, START, END
 from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
 from langchain_community.tools.tavily_search import TavilySearchResults
 
+
+
+def parse_arguments() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run local LLM with RAG with Ollama.")
+    parser.add_argument(
+        "-m",
+        "--model",
+        default="mistral",
+        help="The name of the LLM model to use.",
+    )
+    parser.add_argument(
+        "-e",
+        "--embedding_model",
+        default="nomic-embed-text",
+        help="The name of the embedding model to use.",
+    )
+    parser.add_argument(
+        "-p",
+        "--path",
+        default="Research",
+        help="The path to the directory containing documents to load.",
+    )
+    return parser.parse_args()
+
+
 class GraphState(TypedDict):
     """
     Represents the state of our graph.
@@ -38,39 +63,8 @@ class GraphState(TypedDict):
     steps: List[str]
 
 
-def main(llm_model_name: str, embedding_model_name: str, documents_path: str) -> None:
-    # Creating database form documents
-    try:
-        db = set_vector_store(
-            hf_api_key = HF_API_KEY,
-            embedding_model_name = embedding_model_name, 
-            collection_name = "rag-rd"
-        )
-    except FileNotFoundError as e:
-        print(e)
 
-    # Get voice query qnd convert to text
-    stt = SpeechToTextConverter(
-        whisper_model="base", 
-    )
-    #query = stt()
-    #print("Question: ", query)
-    
-    repo_id = "mistralai/Mistral-7B-Instruct-v0.2"
-
-    llm = HuggingFaceEndpoint(
-        repo_id=repo_id,
-        max_length=128,
-        temperature=0.5,
-        huggingfacehub_api_token=HF_API_KEY,
-    )
-    retriever = db.as_retriever(k=3)
-    retrieval_grader = retrieval_grader_prompt | llm | JsonOutputParser()
-    web_search_tool = TavilySearchResults(k=3)
-    rag_chain = generator_prompt | llm | StrOutputParser()
-    
-    workflow = StateGraph(GraphState)
-
+def main(llm_repo_id: str, embedding_model_name: str, documents_path: str) -> None:
     def retrieve(state):
         """
         Retrieve documents
@@ -185,7 +179,36 @@ def main(llm_model_name: str, embedding_model_name: str, documents_path: str) ->
             "generation": generation,
             "steps": steps,
         }
+    
+    # Creating database form documents
+    try:
+        db = set_vector_store(
+            hf_api_key = HF_API_KEY,
+            embedding_model_name = embedding_model_name, 
+            collection_name = "rag-rd"
+        )
+    except FileNotFoundError as e:
+        print(e)
 
+    # Get voice query qnd convert to text
+    stt = SpeechToTextConverter(
+        whisper_model="base", 
+    )
+    #query = stt()
+    #print("Question: ", query)
+
+    llm = HuggingFaceEndpoint(
+        repo_id=llm_repo_id,
+        max_length=128,
+        temperature=0.5,
+        huggingfacehub_api_token=HF_API_KEY,
+    )
+    retriever = db.as_retriever(k=3)
+    retrieval_grader = retrieval_grader_prompt | llm | JsonOutputParser()
+    web_search_tool = TavilySearchResults(k=3)
+    rag_chain = generator_prompt | llm | StrOutputParser()
+    
+    workflow = StateGraph(GraphState)
 
     # Define the nodes
     workflow.add_node("retrieve", retrieve)  # retrieve
@@ -215,31 +238,6 @@ def main(llm_model_name: str, embedding_model_name: str, documents_path: str) ->
     print(response)
 
 
-
-
-def parse_arguments() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run local LLM with RAG with Ollama.")
-    parser.add_argument(
-        "-m",
-        "--model",
-        default="mistral",
-        help="The name of the LLM model to use.",
-    )
-    parser.add_argument(
-        "-e",
-        "--embedding_model",
-        default="nomic-embed-text",
-        help="The name of the embedding model to use.",
-    )
-    parser.add_argument(
-        "-p",
-        "--path",
-        default="Research",
-        help="The path to the directory containing documents to load.",
-    )
-    return parser.parse_args()
-
-
 if __name__ == "__main__":
     args = parse_arguments()
-    main(args.model, args.embedding_model, args.path)
+    main("meta-llama/Meta-Llama-3-8B-Instruct", args.embedding_model, args.path)
