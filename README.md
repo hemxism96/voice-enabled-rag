@@ -6,25 +6,25 @@ This project implements a voice-enabled conversational assistant designed to ans
 
 ## Features
 
-- STT: speech recognition using the Whisper model.
+- STT: Speech recognition using the Whisper model.
 
-- Retriever: document retrieval from a vector store.
+- Retriever: Document retrieval from a vector store.
 
-- Reranker: rerank retrieved documents.
+- Reranker: Rerank retrieved documents.
 
-- Grader: grading of retrieved documents for relevance.
+- Grader: Grade retrieved documents for relevance.
 
-- Web searching: search documents on web in case there is no relevant information from given documents.
+- Web Searching: Search the web for documents when no relevant information is found in the existing database.
 
-- Generator: generate an answer using a large language model.
+- Generator: Generate an answer using a large language model (LLM).
 
-- Rephraser: rephrase query for improved accuracy. (coming)
+- Rephraser: Rephrase the query for improved accuracy (coming soon).
 
-- TTS: convert generated answer to audio by coqui (coming)
+- TTS: Convert generated answers to audio using Coqui (coming soon).
 
-- multi-modality: unstructure pdf and get more information in many format features. ex) image, tables (coming)
+- Multi-modality: Extract unstructured data from PDFs and retrieve information in various formats (e.g., images, tables) (coming soon).
 
-- LLM judge: verify generated response (coming)
+- LLM Judge: Verify the accuracy of generated responses (coming soon).
 
 ## Requirements
 
