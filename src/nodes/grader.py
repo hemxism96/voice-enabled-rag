@@ -47,7 +47,6 @@ def get_grader_chain(model_name: Optional[str] = "llama3.2") -> RunnableSerializ
         template=RETRIEVAL_GRADER_TEMPLATE,
         input_variables=["question", "documents"],
     )
-    print(model_name)
     llm = ChatOllama(model=model_name, format="json", temperature=0)
     retrieval_grader = retrieval_grader_prompt | llm | JsonOutputParser()
     return retrieval_grader

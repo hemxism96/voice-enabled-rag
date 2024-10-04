@@ -7,7 +7,7 @@ from langchain_core.runnables.base import RunnableSerializable
 GENERATOR_TEMPLATE = """You are an assistant for question-answering tasks.
 Use the following documents to answer the question. 
 If you don't know the answer, just say that you don't know. 
-Use three sentences maximum and keep the answer concise:
+Keep the answer concise:
 
 Question: {question} 
 Documents: {documents} 
@@ -40,6 +40,7 @@ def get_generator_chain(llm_repo_id: str, hf_api_key: str) -> RunnableSerializab
         repo_id=llm_repo_id,
         max_length=128,
         temperature=0.5,
+        repetition_penalty=1.03,
         huggingfacehub_api_token=hf_api_key,
     )
     generator_chain = generator_prompt | llm | StrOutputParser()

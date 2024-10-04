@@ -161,5 +161,4 @@ class Nodes:
             "generation": generation,
             "steps": steps,
         }
-        print(new_state)
         return new_state

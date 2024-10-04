@@ -17,6 +17,7 @@ LLM_REPO_ID = "meta-llama/Meta-Llama-3-8B-Instruct"
 
 
 class NodeHelpers:
+    """Helper class to initialize nodes."""
     retriever = get_retriever(load_db=True, collection_name="rag-sbert")
     reranker = get_reranker()
     retrieval_grader = get_grader_chain()
@@ -42,15 +43,13 @@ def main() -> None:
     nodes = Nodes(helpers=NodeHelpers())
     custom_graph = Graph.create(nodes)
     stt = SpeechToTextConverter(whisper_model="base")
-    #query = stt()
-    query = "List the members of the board directors in 2022."
-    print("Question: ", query)
+    query = stt()
+    print(f"Question: {query}")
     config = {"configurable": {"thread_id": str(uuid.uuid4())}}
-    state_dict = custom_graph.invoke(
-        {"question": query, "steps": []}, config
-    )
+    state_dict = custom_graph.invoke({"question": query, "steps": []}, config)
     res = {"response": state_dict["generation"], "steps": state_dict["steps"]}
-    print(res)
+    print(f"Steps: {res['steps']}")
+    print(f"Response: {res['response']}")
 
 
 if __name__ == "__main__":
