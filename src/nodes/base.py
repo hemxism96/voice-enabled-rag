@@ -1,19 +1,27 @@
 from langchain.schema import Document
-from dotenv import load_dotenv
-import os
-load_dotenv()
-debug_mode = os.getenv("DEBUG") == "True"
 
 
 class Nodes:
-    def __init__(self, helpers):
+    """
+    A class to manage various operations related to nodes, including re-querying, 
+    retrieving documents, grading relevance, web searching, and generating answers.
+    """
+    def __init__(self, helpers) -> None:
+        """
+        Initializes the Nodes class with the provided NodeHelpers instance.
+
+        Args:
+            helpers (NodeHelpers): An instance of the NodeHelpers class that provides
+            various tools for retrieval, rephrasing, grading, searching, and generation.
+        """
         self.retriever = helpers.retriever
+        self.reranker = helpers.reranker
         self.retrieval_grader = helpers.retrieval_grader
         self.web_search_tool = helpers.web_search_tool
         self.generator = helpers.generator
 
 
-    def retrieve(self, state):
+    def retrieve(self, state: dict) -> dict:
         """
         Retrieve documents
 
@@ -24,14 +32,39 @@ class Nodes:
             state (dict): New key added to state, documents, that contains retrieved documents
         """
         question = state["question"]
-        print(question)
         documents = self.retriever.invoke(question)
         steps = state["steps"]
         steps.append("retrieve_documents")
-        return {"documents": documents, "question": question, "steps": steps}
+        new_state = {"documents": documents, "question": question, "steps": steps}
+        return new_state
 
 
-    def grade_documents(self, state):
+    def rerank(self, state: dict) -> dict:
+        """
+        Rerank documents
+
+        Args:
+            state (dict): The current graph state
+
+        Returns:
+            state (dict): New key added to state, documents, that contains best retrieved documents
+        """
+        question = state["question"]
+        documents = [d.page_content for d in state["documents"]]
+        reranked_document = self.reranker.rank(
+            question, documents, return_documents=True, top_k=3
+        )
+        reranked_document = [
+            Document(page_content=d["text"], metadata={"source": "rerank_doc"})
+            for d in reranked_document
+        ]
+        steps = state["steps"]
+        steps.append("rerank")
+        new_state = {"documents": reranked_document, "question": question, "steps": steps}
+        return new_state
+
+
+    def grade_documents(self, state: dict) -> dict:
         """
         Determines whether the retrieved documents are relevant to the question.
 
@@ -41,7 +74,6 @@ class Nodes:
         Returns:
             state (dict): Updates documents key with only filtered relevant documents
         """
-
         question = state["question"]
         documents = state["documents"]
         steps = state["steps"]
@@ -56,17 +88,18 @@ class Nodes:
                 filtered_docs.append(d)
         if len(filtered_docs)==0:
             search = "Yes"
-        return {
+        new_state = {
             "documents": filtered_docs,
             "question": question,
             "search": search,
             "steps": steps,
         }
+        return new_state
 
 
-    def decide_to_generate(self, state):
+    def decide_to_generate(self, state: dict) -> str:
         """
-        Determines whether to generate an answer, or re-generate a question.
+        Determines whether to generate an answer, or do web research.
 
         Args:
             state (dict): The current graph state
@@ -76,14 +109,15 @@ class Nodes:
         """
         search = state["search"]
         if search == "Yes":
-            return "search"
+            next_node = "search"
         else:
-            return "generate"
+            next_node = "generate"
+        return next_node
 
 
-    def web_search(self, state):
+    def web_search(self, state: dict) -> dict:
         """
-        Web search based on the re-phrased question.
+        Web search based on the question.
 
         Args:
             state (dict): The current graph state
@@ -91,7 +125,6 @@ class Nodes:
         Returns:
             state (dict): Updates documents key with appended web results
         """
-
         question = state["question"]
         documents = state.get("documents", [])
         steps = state["steps"]
@@ -103,10 +136,11 @@ class Nodes:
                 for d in web_results
             ]
         )
-        return {"documents": documents, "question": question, "steps": steps}
+        new_state = {"documents": documents, "question": question, "steps": steps}
+        return new_state
 
 
-    def generate(self, state):
+    def generate(self, state: dict) -> dict:
         """
         Generate answer
 
@@ -117,13 +151,15 @@ class Nodes:
             state (dict): New key added to state, generation, that contains LLM generation
         """
         question = state["question"]
-        documents = state["documents"]
+        documents = "\n\n".join(doc.page_content for doc in state["documents"])
         generation = self.generator.invoke({"documents": documents, "question": question})
         steps = state["steps"]
         steps.append("generate_answer")
-        return {
+        new_state = {
             "documents": documents,
             "question": question,
             "generation": generation,
             "steps": steps,
         }
+        print(new_state)
+        return new_state

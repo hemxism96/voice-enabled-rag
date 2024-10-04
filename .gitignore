@@ -2,5 +2,9 @@ venv
 db
 __pycache__
 .env
-langgraph/__pycache__
 tmp
+app
+archive
+data_tmp
+langgraph
+data/.DS_Store
