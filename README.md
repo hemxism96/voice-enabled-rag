@@ -34,7 +34,7 @@ This project implements a voice-enabled conversational assistant designed to ans
 
 1. Clone the repository:
 ```
-git clone https://github.com/scho/voice-enabled-rag.git
+git clone https://github.com/hemxism96/voice-enabled-rag.git
 cd voice-enabled-rag
 ```
 
