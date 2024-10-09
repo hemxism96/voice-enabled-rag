@@ -5,8 +5,11 @@ langchain_chroma
 langchain_community
 langchain_huggingface
 langgraph
+openai-whisper
+pyaudio
 pypdf
 sentence_transformers
+soundfile
 SpeechRecognition
 tiktoken
 typing-extensions
