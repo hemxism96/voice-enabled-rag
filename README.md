@@ -45,10 +45,19 @@ pip install -r requirements.txt
 
 3. Set up your environment variables:
 
-Create a .env file in the root of the project and add your Hugging Face API key:
+Create a .env file in the root of the project and add your API keys:
 ```
 HF_API_KEY={your_huggingface_api_key}
+TAVILY_API_KEY={tavily_api_key}
 ```
+
+4. Install Ollama:
+
+To install Ollama, please follow the instructions provided in the Ollama GitHub Model Library (https://github.com/ollama/ollama#model-library). The installation steps vary based on your operating system (OS). After installation, you can run the Llama 3.2 model by executing the following command:
+```
+ollama run llama3.2
+```
+Make sure to check the documentation for any additional configuration or usage details.
 
 ## Usage
 You can use either the graphical interface (demo.py) or run it without the interface (main.py):
