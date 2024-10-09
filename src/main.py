@@ -1,28 +1,7 @@
-import os
-from dotenv import load_dotenv
 import uuid
 
-from workflow.graph import Graph
-from nodes.vector_store import get_retriever
-from nodes.reranker import get_reranker
-from nodes.grader import get_grader_chain
-from nodes.web_search import get_web_tool
-from nodes.llm import get_generator_chain
-from nodes.base import Nodes
-from module.stt import SpeechToTextConverter
-
-load_dotenv()
-HF_API_KEY = os.getenv("HF_API_KEY")
-LLM_REPO_ID = "meta-llama/Meta-Llama-3-8B-Instruct"
-
-
-class NodeHelpers:
-    """Helper class to initialize nodes."""
-    retriever = get_retriever(load_db=True, collection_name="rag-sbert")
-    reranker = get_reranker()
-    retrieval_grader = get_grader_chain()
-    web_search_tool = get_web_tool()
-    generator = get_generator_chain(llm_repo_id=LLM_REPO_ID, hf_api_key=HF_API_KEY)
+from workflows.graph import create_workflow
+from modules.stt import SpeechToTextConverter
 
 
 def main() -> None:
@@ -35,13 +14,11 @@ def main() -> None:
     user, invokes the workflow with the query, and prints the generated response.
 
     Steps:
-        1. Initialize nodes with NodeHelpers.
-        2. Create a workflow graph using the nodes.
-        3. Convert speech input to text using the SpeechToTextConverter.
-        4. Invoke the workflow with the user's query and print the generated response.
+        1. Create a workflow graph using the nodes.
+        2. Convert speech input to text using the SpeechToTextConverter.
+        3. Invoke the workflow with the user's query and print the generated response.
     """
-    nodes = Nodes(helpers=NodeHelpers())
-    custom_graph = Graph.create(nodes)
+    custom_graph = create_workflow()
     stt = SpeechToTextConverter(whisper_model="base")
     query = stt()
     print(f"Question: {query}")

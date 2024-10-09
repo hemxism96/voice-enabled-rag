@@ -1,17 +1,29 @@
+from langchain.schema import Document
 from sentence_transformers import CrossEncoder
 
+reranker = CrossEncoder(model_name="mixedbread-ai/mxbai-rerank-large-v1")
 
-def get_reranker() -> CrossEncoder:
+
+def rerank(state: dict) -> dict:
     """
-    Initializes and returns a CrossEncoder model for reranking.
+    Rerank documents
 
-    The CrossEncoder model is used to rerank a list of documents or answers 
-    based on their relevance to a query. This implementation loads the 
-    'mixedbread-ai/mxbai-rerank-large-v1' model from Hugging Face, which 
-    is fine-tuned for document retrieval and reranking tasks.
+    Args:
+        state (dict): The current graph state
 
     Returns:
-        CrossEncoder: The CrossEncoder model for reranking.
+        state (dict): New key added to state, documents, that contains best retrieved documents
     """
-    reranker = CrossEncoder(model_name="mixedbread-ai/mxbai-rerank-large-v1")
-    return reranker
+    question = state["question"]
+    documents = [d.page_content for d in state["documents"]]
+    reranked_document = reranker.rank(
+        question, documents, return_documents=True, top_k=3
+    )
+    reranked_document = [
+        Document(page_content=d["text"], metadata={"source": "rerank_doc"})
+        for d in reranked_document
+    ]
+    steps = state["steps"]
+    steps.append("rerank")
+    new_state = {"documents": reranked_document, "question": question, "steps": steps}
+    return new_state

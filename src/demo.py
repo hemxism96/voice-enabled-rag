@@ -1,39 +1,10 @@
-import os
-from dotenv import load_dotenv
-
 import gradio as gr
 from transformers import pipeline
 
-from workflow.graph import Graph
-from nodes.base import Nodes
-from nodes.vector_store import get_retriever
-from nodes.reranker import get_reranker
-from nodes.grader import get_grader_chain
-from nodes.web_search import get_web_tool
-from nodes.llm import get_generator_chain
-
-load_dotenv()
-HF_API_KEY = os.getenv("HF_API_KEY")
-LLM_REPO_ID = "meta-llama/Meta-Llama-3-8B-Instruct"
+from workflows.graph import create_workflow
 
 transcriber = pipeline("automatic-speech-recognition", model="openai/whisper-base.en")
-
-
-class NodeHelpers:
-    """
-    Helper class to initialize nodes.
-    Set 'load_db' to False if you haven't loaded documents in the database.
-    The demo assumes a pre-initialized database with the 'rag-sbert' collection.
-    """
-    retriever = get_retriever(load_db=True, collection_name="rag-sbert")
-    reranker = get_reranker()
-    retrieval_grader = get_grader_chain()
-    web_search_tool = get_web_tool()
-    generator = get_generator_chain(llm_repo_id=LLM_REPO_ID, hf_api_key=HF_API_KEY)
-
-
-nodes = Nodes(helpers=NodeHelpers())
-custom_graph = Graph.create(nodes)
+custom_graph = create_workflow()
 
 
 def transcription_speech(_audio: gr.Audio) -> str:

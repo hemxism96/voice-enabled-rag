@@ -1,3 +1,4 @@
+import argparse
 from typing import Optional
 
 import chromadb
@@ -66,3 +67,6 @@ def get_retriever(
         search_kwargs={"k": 10}
     )
     return retriever
+
+
+retriever = get_retriever(load_db=False)
